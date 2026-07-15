@@ -1,0 +1,72 @@
+# ==========================
+# Node.js
+# ==========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Frontend
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+# Backend
+backend/node_modules/
+backend/build/
+backend/dist/
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+.env.*
+!.env.example
+
+# ==========================
+# Python
+# ==========================
+.venv/
+.venv310/
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ==========================
+# Logs
+# ==========================
+logs/
+*.log
+
+# ==========================
+# OS Files
+# ==========================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================
+# VS Code
+# ==========================
+.vscode/
+
+# ==========================
+# IDEs
+# ==========================
+.idea/
+
+# ==========================
+# Build Files
+# ==========================
+coverage/
+.cache/
+*.tsbuildinfo
+
+# ==========================
+# Misc
+# ==========================
+*.tmp
+*.swp

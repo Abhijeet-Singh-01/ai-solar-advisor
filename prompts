@@ -1,0 +1,246 @@
+# AI Solar Advisor — VS Code AI Build Prompts
+
+Use these prompts **in order**, one at a time, inside VS Code's AI chat (Copilot Chat / Continue / whatever you have). Don't paste all at once — let it finish one phase, review the code, run it, THEN move to the next prompt. This keeps the AI focused and keeps you in control of understanding what's built.
+
+---
+
+## PHASE 0: Project Setup
+
+```
+I'm building a college project called "AI Solar Advisor" with these features:
+- AI-based solar energy output prediction using weather data
+- Solar savings & ROI calculator
+- Carbon footprint tracker
+- Interactive dashboard
+- PDF report export
+
+Tech stack: React (frontend), Python Flask (backend API), scikit-learn (ML model).
+
+Set up the project folder structure for me:
+- /frontend (React app)
+- /backend (Flask app)
+- /backend/model (for ML training script and saved model)
+- /backend/data (for datasets)
+
+Give me the folder tree and the initial boilerplate files (package.json for 
+React, requirements.txt for Flask) with correct dependencies listed:
+React: react, react-dom, recharts, axios
+Flask: flask, flask-cors, scikit-learn, pandas, numpy, joblib, requests
+```
+
+---
+
+## PHASE 1: Get Real Weather Data
+
+```
+I need to fetch historical weather data for solar prediction using the 
+Open-Meteo API (free, no API key needed).
+
+Write a Python script (backend/data/fetch_data.py) that:
+1. Fetches daily historical weather data for the last 2 years for a given 
+   city (start with New Delhi, lat 28.6139, lon 77.2090)
+2. Pulls these fields: temperature_2m_max, temperature_2m_min, 
+   shortwave_radiation_sum (this is our solar irradiance proxy), 
+   cloudcover_mean, relative_humidity_2m_mean, windspeed_10m_max
+3. Saves the result as a clean CSV file in backend/data/weather_data.csv
+4. Print the first 5 rows and basic stats (.describe()) so I can verify it worked
+
+Use the Open-Meteo Archive API endpoint: 
+https://archive-api.open-meteo.com/v1/archive
+
+Explain each part of the code in comments as if I only know JavaScript, not Python.
+```
+
+---
+
+## PHASE 2: Build & Train the ML Model
+
+```
+Using the weather_data.csv from before, write a Python script 
+(backend/model/train_model.py) that:
+
+1. Loads the CSV
+2. Creates a synthetic target column "energy_output_kwh" using this physics 
+   formula (since we don't have real panel output data):
+   energy_output_kwh = shortwave_radiation_sum * 5 (panel_area_m2) * 0.18 
+   (panel_efficiency) * 0.75 (performance_ratio) / 1000
+   Add small random noise to make it realistic for ML training.
+3. Splits data into train/test (80/20)
+4. Trains a RandomForestRegressor to predict energy_output_kwh from the 
+   weather features
+5. Evaluates it with RMSE, MAE, and R² score — print these clearly
+6. Plots predicted vs actual values as a scatter plot and saves it as 
+   backend/model/prediction_plot.png
+7. Saves the trained model as backend/model/solar_model.pkl using joblib
+
+Comment every step in plain English explaining what's happening and why, 
+as if teaching someone who only knows JS/React, not Python or ML.
+```
+
+---
+
+## PHASE 3: Build the Flask Backend API
+
+```
+Create a Flask backend (backend/app.py) with these API endpoints:
+
+1. POST /predict
+   - Accepts JSON: { temperature, cloudcover, humidity, windspeed, radiation }
+   - Loads solar_model.pkl and returns predicted energy_output_kwh
+
+2. POST /calculate-roi
+   - Accepts JSON: { monthlyBill, rooftopArea, tariffRate, state }
+   - Calculates: required panel capacity, estimated monthly savings, 
+     payback period in years, applicable state subsidy %
+   - Use a simple hardcoded dictionary for state-wise subsidy % 
+     (Delhi: 40%, Maharashtra: 20%, Gujarat: 40%, etc. — give me 8 states)
+   - Return all calculated values as JSON
+
+3. POST /carbon-footprint
+   - Accepts JSON: { energyOutputKwh }
+   - Calculates CO2 saved using India's average grid emission factor 
+     (0.82 kg CO2/kWh)
+   - Also return "tree equivalent" (1 tree absorbs ~21kg CO2/year)
+   - Return as JSON
+
+4. GET /report/:userId (stub for now, we'll build PDF generation later)
+
+Enable CORS for all routes so React can call this locally. 
+Add comments explaining each route in plain English.
+```
+
+---
+
+## PHASE 4: Build the React Frontend — Input Form
+
+```
+Build a React component called SolarInputForm.jsx that:
+
+1. Has input fields for: city/location, monthly electricity bill (₹), 
+   rooftop area (sq ft), state (dropdown of 8 states)
+2. On submit, calls my Flask backend:
+   - First calls a weather lookup (I'll add this endpoint next) to get 
+     current conditions for the city
+   - Then calls POST /predict with that weather data
+   - Then calls POST /calculate-roi with the bill/area/state data
+   - Then calls POST /carbon-footprint with the predicted energy output
+3. Stores all results in state and passes them to a parent Dashboard component
+4. Shows a loading spinner while waiting for API responses
+5. Handles errors gracefully (show a friendly error message if API fails)
+
+Use functional components with hooks (useState). Use axios for API calls. 
+Style it simply with clean CSS (I'll polish design later).
+```
+
+---
+
+## PHASE 5: Build the React Dashboard
+
+```
+Build a Dashboard.jsx component that receives prediction, ROI, and carbon 
+data as props and displays:
+
+1. A summary card row: predicted energy output (kWh/day), monthly savings 
+   (₹), payback period (years), CO2 saved (kg/year)
+2. A bar chart (using recharts) comparing "electricity cost without solar" 
+   vs "electricity cost with solar" over 12 months
+3. A line chart showing projected cumulative savings over 20 years
+4. A stat block: "This is equivalent to planting X trees per year" 
+   (use the tree equivalent from backend)
+5. A "Download PDF Report" button (we'll wire this up next)
+
+Make it visually clean — use recharts ResponsiveContainer, a card-based 
+grid layout, and simple color coding (green for savings/positive, 
+neutral colors elsewhere). Use plain CSS, no Tailwind unless I confirm 
+I have it set up.
+```
+
+---
+
+## PHASE 6: PDF Report Generation
+
+```
+Add PDF report generation to my project. 
+
+Backend approach: Add a Flask endpoint POST /generate-report that accepts 
+all the calculated data (prediction, ROI, carbon) as JSON, uses the 
+`reportlab` Python library to generate a clean PDF with:
+- Title: "AI Solar Advisor — Personalized Report"
+- User's input summary (location, bill, area)
+- Predicted energy output with a simple bar visualization
+- ROI summary table (monthly savings, payback period, subsidy applied)
+- Carbon impact summary
+- Footer with generation date
+
+Return the PDF as a downloadable file response.
+
+Frontend: Wire up the "Download PDF Report" button in Dashboard.jsx to 
+call this endpoint and trigger a browser download of the returned PDF.
+
+Add reportlab to requirements.txt. Explain the PDF generation code in 
+plain English comments.
+```
+
+---
+
+## PHASE 7: Connect Weather Lookup by City Name
+
+```
+Right now my prediction flow needs raw weather numbers, but users only 
+type a city name. Add a Flask endpoint GET /weather?city=<cityname> that:
+
+1. Uses Open-Meteo's free Geocoding API to convert city name -> lat/lon
+   (https://geocoding-api.open-meteo.com/v1/search?name=<city>)
+2. Uses those coordinates to call Open-Meteo's current weather forecast API 
+   to get today's temperature, cloudcover, humidity, windspeed, and 
+   shortwave_radiation
+3. Returns this data as clean JSON matching the format my /predict 
+   endpoint expects
+
+Update SolarInputForm.jsx to call this endpoint first (using the city name 
+the user typed) before calling /predict, and chain the results together 
+automatically.
+```
+
+---
+
+## PHASE 8: Polish & Error Handling
+
+```
+Review my full AI Solar Advisor project (React frontend + Flask backend) 
+and:
+
+1. Add proper error handling everywhere (invalid city names, API 
+   timeouts, missing form fields) with user-friendly messages
+2. Add loading states for every async action
+3. Add basic input validation on the form (no negative numbers, required 
+   fields)
+4. Suggest 3 small UI improvements to make the dashboard look more 
+   professional for a project demo
+5. Write a short README.md explaining how to run the whole project 
+   (backend setup, frontend setup, how they connect)
+```
+
+---
+
+## PHASE 9: IoT Future Scope Write-up (no code, just documentation)
+
+```
+Write a "Future Scope: IoT Integration" section for my project report. 
+My project is currently software-only (weather API + ML prediction + 
+dashboard). Explain conceptually:
+1. How a real solar setup could use light/temperature sensors 
+   (e.g., ESP32 + LDR sensor) to send live data instead of API weather data
+2. How this data would flow: sensor -> ESP32 -> MQTT broker -> Flask 
+   backend -> dashboard (real-time updates)
+3. Keep it realistic and concise — 200-250 words, suitable for a 
+   college project report, not overly technical.
+```
+
+---
+
+## How to use this well
+- Do phases **in order** — each depends on the previous one working.
+- After each phase, **run the code** and make sure it actually works before moving on.
+- Ask VS Code AI "explain this part to me" on anything you don't understand — don't skip that step, it's what saves you in the viva.
+- If something breaks, paste the exact error message back into the chat rather than re-describing the problem — AI debugs errors much faster than descriptions.
